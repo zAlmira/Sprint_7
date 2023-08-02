@@ -1,81 +1,50 @@
 import io.qameta.allure.junit4.DisplayName;
-import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
-import ru.praktikum_services.qa_scooter.*;
+import ru.praktikum.services.qa.scooter.api.client.CourierLoginHttpClient;
+import ru.praktikum.services.qa.scooter.api.client.DeleteCourierHttpClient;
+import ru.praktikum.services.qa.scooter.api.client.MakeCourierHttpClient;
+import ru.praktikum.services.qa.scooter.api.model.*;
 
-import static io.restassured.RestAssured.given;
 import static org.hamcrest.core.IsEqual.equalTo;
 
 public class MakeCourierTest {
-    private MakeCourier makeCourier;
-    private MakeCourierWithoutLogin makeCourierWithoutLogin;
-
-    @Before
-    public void setUp() {
-        RestAssured.baseURI = "http://qa-scooter.praktikum-services.ru";
-    }
 
     @Test
     @DisplayName("Check status code of /api/v1/courier")
     public void makeCourierSuccess() {
-        makeCourier = new MakeCourier("kallen", "kallenpassword", "kallen");
-        Response response = given()
-                .header("Content-type", "application/json")
-                .body(makeCourier)
-                .post("/api/v1/courier");
+        MakeCourierHttpClient makeCourierHttpClient = new MakeCourierHttpClient();
+        Response getMakeCourierResponse = makeCourierHttpClient.getMakeCourierResponse(new MakeCourier("cloud", "cloudpassword", "cloud"));
         MakeCourierResponse makeCourierResponse =
-                response.body().as(MakeCourierResponse.class);
-        response.then().assertThat().body("ok", equalTo(makeCourierResponse.getOk()))
-                .and().statusCode(201);
+                getMakeCourierResponse.body().as(MakeCourierResponse.class);
+        getMakeCourierResponse.then().statusCode(201).and().assertThat().body("ok", equalTo(makeCourierResponse.getOk()));
     }
 
     @Test
     @DisplayName("Check status code of /api/v1/courier without login")
     public void makeCourierWithoutLogin() {
-        makeCourierWithoutLogin = new MakeCourierWithoutLogin("kallenpassword", "kallen");
-        given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(makeCourierWithoutLogin)
-                .when()
-                .post("/api/v1/courier")
-                .then().assertThat().body("message", equalTo("Недостаточно данных для создания учетной записи"))
-                .and().statusCode(400);
+        MakeCourierHttpClient makeCourierHttpClient = new MakeCourierHttpClient();
+        Response getMakeCourierResponseWithoutLogin = makeCourierHttpClient.getMakeCourierResponseWithoutLogin(new MakeCourierWithoutLogin("cloudpassword", "cloud"));
+        getMakeCourierResponseWithoutLogin.then().statusCode(400).and().assertThat().body("message", equalTo("Недостаточно данных для создания учетной записи"));
     }
 
     @Test
     @DisplayName("Check status code of /api/v1/courier with existable login")
     public void makeCourierWithExistableLogin() {
-        makeCourier = new MakeCourier("kallen", "kallenpassword", "kallen");
-        given()
-                .header("Content-type", "application/json")
-                .body(makeCourier)
-                .post("/api/v1/courier");
-        given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(makeCourier)
-                .when()
-                .post("/api/v1/courier")
-                .then().assertThat().body("message", equalTo("Этот логин уже используется"))
-                .and().statusCode(409);
+        MakeCourierHttpClient makeCourierHttpClient = new MakeCourierHttpClient();
+        Response getMakeCourierResponse = makeCourierHttpClient.getMakeCourierResponse(new MakeCourier("cloud", "cloudpassword", "cloud"));
+        getMakeCourierResponse = makeCourierHttpClient.getMakeCourierResponse(new MakeCourier("cloud", "cloudpassword", "cloud"));
+        getMakeCourierResponse.then().statusCode(409).and().assertThat().body("message", equalTo("Этот логин уже используется"));
     }
 
     @After
     public void deleteTestData() {
-        CourierLogin courierLogin = new CourierLogin("kallen", "kallenpassword");
-        CourierId courierId = given()
-                .header("Content-type", "application/json")
-                .body(courierLogin)
-                .post("/api/v1/courier/login")
-                .body()
-                .as(CourierId.class);
-        given()
-                .header("Content-type", "application/json")
-                .delete("/api/v1/courier/" + courierId.getId());
+        CourierLoginHttpClient courierLoginHttpClient = new CourierLoginHttpClient();
+        Response loginResponse = courierLoginHttpClient.getLoginResponse(new CourierLogin("cloud", "cloudpassword"));
+        CourierId courierId = loginResponse.body().as(CourierId.class);
+        DeleteCourierHttpClient deleteCourierHttpClient = new DeleteCourierHttpClient();
+        Response deleteCourier = deleteCourierHttpClient.doDeleteCourier(courierId.getId());
     }
 
 }

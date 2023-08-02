@@ -1,18 +1,15 @@
-package ru.praktikum_services.qa_scooter;
+package ru.praktikum.services.qa.scooter.api.model;
 
-public class MakeCourier {
-    private String login;
+public class MakeCourierWithoutLogin {
     private String password;
     private String firstName;
 
-    public MakeCourier(String login, String password, String firstName) {
-        this.login = login;
+    public MakeCourierWithoutLogin(String password, String firstName) {
         this.password = password;
         this.firstName = firstName;
     }
 
-    public MakeCourier() {
-
+    public MakeCourierWithoutLogin() {
     }
 
     public String getPassword() {
@@ -23,20 +20,11 @@ public class MakeCourier {
         this.password = password;
     }
 
-
     public String getFirstName() {
         return firstName;
     }
 
     public void setFirstName(String firstName) {
         this.firstName = firstName;
-    }
-
-    public String getLogin() {
-        return login;
-    }
-
-    public void setLogin(String login) {
-        this.login = login;
     }
 }

@@ -1,4 +1,4 @@
-package ru.praktikum_services.qa_scooter;
+package ru.praktikum.services.qa.scooter.api.model;
 
 public class MakeCourierResponse {
     private boolean ok;

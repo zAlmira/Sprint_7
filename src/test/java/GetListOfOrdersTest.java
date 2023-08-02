@@ -1,15 +1,17 @@
 import io.qameta.allure.junit4.DisplayName;
-import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import ru.praktikum_services.qa_scooter.*;
+import ru.praktikum.services.qa.scooter.api.client.DeleteOrderHttpClient;
+import ru.praktikum.services.qa.scooter.api.client.GetListOfOrdersHttpClient;
+import ru.praktikum.services.qa.scooter.api.client.MakeOrderHttpClient;
+import ru.praktikum.services.qa.scooter.api.model.MakeOrder;
+import ru.praktikum.services.qa.scooter.api.model.MakeOrderResponse;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static io.restassured.RestAssured.given;
 import static org.hamcrest.core.IsNull.notNullValue;
 
 public class GetListOfOrdersTest {
@@ -28,28 +30,19 @@ public class GetListOfOrdersTest {
 
     @Before
     public void setUp() {
-        RestAssured.baseURI = "http://qa-scooter.praktikum-services.ru";
         color.add(colorGrey);
         color.add(colorBlack);
         MakeOrder makeOrder = new MakeOrder(firstName, lastName, address, metroStation, phone, rentTime, deliveryDate, comment);
-        responseOfMakeOrder = given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(makeOrder)
-                .and()
-                .body(color)
-                .post("/api/v1/orders");
+        MakeOrderHttpClient makeOrderHttpClient = new MakeOrderHttpClient();
+        responseOfMakeOrder = makeOrderHttpClient.doPostMakeOrder(makeOrder, color);
     }
 
     @Test
     @DisplayName("Check status code of /api/v1/orders")
     public void getListOfOrdersSuccess() {
-        given()
-                .header("Content-type", "application/json")
-                .get("/api/v1/orders")
-                .then().statusCode(200)
-                .and()
-                .assertThat().body("orders", notNullValue());
+        GetListOfOrdersHttpClient getListOfOrdersHttpClient = new GetListOfOrdersHttpClient();
+        Response getListOfOrdersResponse = getListOfOrdersHttpClient.doGetListOfOrders();
+        getListOfOrdersResponse.then().statusCode(200).and().assertThat().body("orders", notNullValue());
     }
 
     @After
@@ -57,11 +50,8 @@ public class GetListOfOrdersTest {
         color.clear();
         MakeOrderResponse makeOrderResponse = responseOfMakeOrder.body()
                 .as(MakeOrderResponse.class);
-        given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(makeOrderResponse)
-                .put("/api/v1/orders/cancel");
+        DeleteOrderHttpClient deleteOrderHttpClient = new DeleteOrderHttpClient();
+        Response responseDeleteOrder = deleteOrderHttpClient.doDeleteOrder(makeOrderResponse);
     }
 
 }

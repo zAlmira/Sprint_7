@@ -1,18 +1,17 @@
 import io.qameta.allure.junit4.DisplayName;
-import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import ru.praktikum_services.qa_scooter.MakeOrder;
-import ru.praktikum_services.qa_scooter.MakeOrderResponse;
+import ru.praktikum.services.qa.scooter.api.client.DeleteOrderHttpClient;
+import ru.praktikum.services.qa.scooter.api.client.MakeOrderHttpClient;
+import ru.praktikum.services.qa.scooter.api.model.MakeOrder;
+import ru.praktikum.services.qa.scooter.api.model.MakeOrderResponse;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static io.restassured.RestAssured.given;
 import static org.hamcrest.core.IsNull.notNullValue;
 
 @RunWith(Parameterized.class)
@@ -29,7 +28,7 @@ public class MakeOrderTest {
     private final String colorGrey;
     private final String colorBlack;
     private List<String> color = new ArrayList<String>();
-    private Response response;
+    private Response makeOrderHttpClientResponse;
 
 
     public MakeOrderTest(String firstName, String lastName, String address, String metroStation, String phone, int rentTime, String deliveryDate, String comment, String colorGrey, String colorBlack, int expectedCode) {
@@ -55,37 +54,23 @@ public class MakeOrderTest {
         };
     }
 
-    @Before
-    public void setUp() {
-        RestAssured.baseURI = "http://qa-scooter.praktikum-services.ru";
-    }
-
     @Test
     @DisplayName("Check status code of /api/v1/orders")
     public void makeOrderSuccess() {
         color.add(colorGrey);
         color.add(colorBlack);
         MakeOrder makeOrder = new MakeOrder(firstName, lastName, address, metroStation, phone, rentTime, deliveryDate, comment);
-        response = given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(makeOrder)
-                .and()
-                .body(color)
-                .post("/api/v1/orders");
-        response.then().assertThat().body("track", notNullValue())
-                .and().statusCode(expectedCode);
+        MakeOrderHttpClient makeOrderHttpClient = new MakeOrderHttpClient();
+        makeOrderHttpClientResponse = makeOrderHttpClient.doPostMakeOrder(makeOrder, color);
+        makeOrderHttpClientResponse.then().statusCode(expectedCode).and().assertThat().body("track", notNullValue());
     }
 
     @After
     public void deleteTestData() {
         color.clear();
-        MakeOrderResponse makeOrderResponse = response.body()
+        MakeOrderResponse makeOrderResponse = makeOrderHttpClientResponse.body()
                 .as(MakeOrderResponse.class);
-        given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(makeOrderResponse)
-                .put("/api/v1/orders/cancel");
+        DeleteOrderHttpClient deleteOrderHttpClient = new DeleteOrderHttpClient();
+        Response responseDeleteOrder = deleteOrderHttpClient.doDeleteOrder(makeOrderResponse);
     }
 }

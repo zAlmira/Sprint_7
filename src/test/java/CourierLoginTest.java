@@ -1,91 +1,56 @@
 import io.qameta.allure.junit4.DisplayName;
-import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import ru.praktikum_services.qa_scooter.CourierId;
-import ru.praktikum_services.qa_scooter.CourierLogin;
-import ru.praktikum_services.qa_scooter.CourierLoginWithoutLogin;
-import ru.praktikum_services.qa_scooter.MakeCourier;
+import ru.praktikum.services.qa.scooter.api.client.CourierLoginHttpClient;
+import ru.praktikum.services.qa.scooter.api.client.DeleteCourierHttpClient;
+import ru.praktikum.services.qa.scooter.api.client.MakeCourierHttpClient;
+import ru.praktikum.services.qa.scooter.api.model.CourierId;
+import ru.praktikum.services.qa.scooter.api.model.CourierLogin;
+import ru.praktikum.services.qa.scooter.api.model.CourierLoginWithoutLogin;
+import ru.praktikum.services.qa.scooter.api.model.MakeCourier;
 
-import static io.restassured.RestAssured.given;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.core.IsNull.notNullValue;
 
 public class CourierLoginTest {
-    private CourierLogin courierLogin;
-    private MakeCourier makeCourier;
-    private CourierLoginWithoutLogin courierLoginWithoutLogin;
-
-
     @Before
     public void setUp() {
-        RestAssured.baseURI = "http://qa-scooter.praktikum-services.ru";
-        makeCourier = new MakeCourier("satle", "satlepassword", "satle");
-        given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(makeCourier)
-                .when()
-                .post("/api/v1/courier");
+        MakeCourierHttpClient makeCourierHttpClient = new MakeCourierHttpClient();
+        makeCourierHttpClient.getMakeCourierResponse(new MakeCourier("cloud", "cloudpassword", "cloud"));
     }
 
     @Test
     @DisplayName("Check status code of /api/v1/courier/login without login")
     public void doPostCourierLoginWithoutLoginCode400() {
-        courierLoginWithoutLogin = new CourierLoginWithoutLogin("satlepassword");
-        Response response =
-                given()
-                        .header("Content-type", "application/json")
-                        .and()
-                        .body(courierLoginWithoutLogin)
-                        .when()
-                        .post("/api/v1/courier/login");
-        response.then().assertThat().body("message", equalTo("Недостаточно данных для входа"))
-                .and()
-                .statusCode(400);
+        CourierLoginHttpClient courierLoginHttpClient = new CourierLoginHttpClient();
+        Response getLoginResponseWithoutLogin = courierLoginHttpClient.getLoginResponseWithoutLogin(new CourierLoginWithoutLogin("cloudpassword"));
+        getLoginResponseWithoutLogin.then().statusCode(400).and().assertThat().body("message", equalTo("Недостаточно данных для входа"));
     }
 
     @Test
     @DisplayName("Check status code of /api/v1/courier/login with incorrect pair of login and password")
     public void doPostCourierLoginWithIncorrectPairOfLoginAndPassword() {
-        courierLogin = new CourierLogin("satle", "satlepassword2");
-        Response response =
-                given()
-                        .header("Content-type", "application/json")
-                        .body(courierLogin)
-                        .post("/api/v1/courier/login");
-        response.then().assertThat().body("message", equalTo("Учетная запись не найдена"))
-                .and()
-                .statusCode(404);
+        CourierLoginHttpClient courierLoginHttpClient = new CourierLoginHttpClient();
+        Response loginResponse = courierLoginHttpClient.getLoginResponse(new CourierLogin("cloud", "cloudpassword2"));
+        loginResponse.then().statusCode(404).and().assertThat().body("message", equalTo("Учетная запись не найдена"));
     }
 
     @Test
     @DisplayName("Check status code of /api/v1/courier/login with correct login and password")
     public void doPostCourierLoginSuccess() {
-        courierLogin = new CourierLogin("satle", "satlepassword");
-        Response response =
-                given()
-                        .header("Content-type", "application/json")
-                        .body(courierLogin)
-                        .post("/api/v1/courier/login");
-        response.then().assertThat().body("id", notNullValue())
-                .and()
-                .statusCode(200);
+        CourierLoginHttpClient courierLoginHttpClient = new CourierLoginHttpClient();
+        Response loginResponse = courierLoginHttpClient.getLoginResponse(new CourierLogin("cloud", "cloudpassword"));
+        loginResponse.then().statusCode(200).and().assertThat().body("id", notNullValue());
     }
 
     @After
     public void deleteTestData() {
-        CourierLogin courierLogin = new CourierLogin("satle", "satlepassword");
-        CourierId courierId = given()
-                .header("Content-type", "application/json")
-                .body(courierLogin)
-                .post("/api/v1/courier/login")
-                .body()
-                .as(CourierId.class);
-        given()
-                .header("Content-type", "application/json")
-                .delete("/api/v1/courier/" + courierId.getId());
+        CourierLoginHttpClient courierLoginHttpClient = new CourierLoginHttpClient();
+        Response loginResponse = courierLoginHttpClient.getLoginResponse(new CourierLogin("cloud", "cloudpassword"));
+        CourierId courierId = loginResponse.body().as(CourierId.class);
+        DeleteCourierHttpClient deleteCourierHttpClient = new DeleteCourierHttpClient();
+        Response deleteCourier = deleteCourierHttpClient.doDeleteCourier(courierId.getId());
     }
 }

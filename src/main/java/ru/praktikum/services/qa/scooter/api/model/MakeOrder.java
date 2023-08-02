@@ -1,4 +1,4 @@
-package ru.praktikum_services.qa_scooter;
+package ru.praktikum.services.qa.scooter.api.model;
 
 public class MakeOrder {
     private String firstName;
@@ -9,6 +9,7 @@ public class MakeOrder {
     private int rentTime;
     private String deliveryDate;
     private String comment;
+
     public MakeOrder(String firstName, String lastName, String address, String metroStation, String phone, int rentTime, String deliveryDate, String comment) {
         this.firstName = firstName;
         this.lastName = lastName;
@@ -22,6 +23,7 @@ public class MakeOrder {
 
     public MakeOrder() {
     }
+
     public String getFirstName() {
         return firstName;
     }
